@@ -1,0 +1,3 @@
+README for HTML5 mobile experiments
+1) webdatabase-test: This tests the consistency of inserts and also the amount of data you can load (multiple inserts iteratively)
+2) index-db-test: Test IndexedDB implementation
