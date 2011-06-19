@@ -2,13 +2,12 @@
 <html>
 	<title>IndexedDB Test</title>
 	<script>
-		
-		
 		var idx_database = {}
-		
 		var test_data = [
-			{id: 1, name: "John Archer", age: 35, location: "Broken Bow"},
-			{id: 2, name: "Hoshi", age: 32, location: "Tokyo"}
+			{id: 1, name: "Jonathan Archer", age: 35, location: "Broken Bow"},
+			{id: 2, name: "Hoshi Sato", age: 32, location: "Tokyo"},
+			{id: 3, name: "Travis Mayweather", age:28, location: "Unknown"},
+			{id: 4, name: "Malcolm Reed", age: 30, location: "London" }
 		];
 		
 		function log(msg) {
@@ -35,29 +34,32 @@
 		function startup() {
 			var request = window.indexedDB.open("SimpleTestDatabase", "This is a simple database to test IndexedDB");
 			request.onsuccess = function(event) {
-			  idx_database = request.result;
-			  log("Database Opened");
-			  idx_database.onversionchange = function() {
+				idx_database = request.result;
+				log("Database Opened");
+				idx_database.onversionchange = function() {
 			    log("Version change request, so closing the database");
 			    idx_database.db.close();
 			    delete idx_database.db;
-			  }
-			  createObjectStore();
-			 loadObjects();
-			};
-			request.onerror = function(e) {
-			  error(e);
-			};
+			}
+			createObjectStore();
+			loadObjects();
+			readObjects();	
+		};
+		request.onerror = function(e) {
+			error(e);
+		};
 		}
 		
 		//Created a object store in the database (Eq to creating a table)
 		function createObjectStore() {
 			var ver = "1.0";
 			if(ver != idx_database.version) {
+				// We can only create Object stores in a setVersion transaction;
 				var set_version_request = idx_database.setVersion(ver);
 				set_version_request.onerror = function(e) {
 					error(e);
 				};
+				// onsuccess is the only place we can create Object Stores
 				set_version_request.onsuccess = function(e) {
 					idx_database.createObjectStore("enterprise_nx01", { keyPath: "id", autoincrement: true } );
 					log("Object Store enterprise_nx01 created");
@@ -73,38 +75,50 @@
 			var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
 			//Get the object store
 			var obj_store = trans.objectStore("enterprise_nx01");
-			var request = obj_store.delete(1);
-			request.onsuccess = onCleanUpSuccess;
-			request.onerror = onCleanUpError;
-			var request1 = obj_store.delete(2);
-			request1.onsuccess = onCleanUpSuccess;
-			request1.onerror = onCleanUpError;
-		}
-		
-		function onCleanUpSuccess() {
-			//Do nothing for now
-		}
-		
-		function onCleanUpError(e) {
-			error(e);
+			//Pass the key of the object defined in keyPath to delete
+			obj_store.delete(1);
+			obj_store.delete(2);
+			obj_store.delete(3);
+			obj_store.delete(4);
 		}
 		
 		//Load some test objects into the database
 		function loadObjects() {
-			var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
-			//Get the object store
-			var obj_store = trans.objectStore("enterprise_nx01");
 			//Iterate through test data and store the objects in the store
-			for(var i=0; i< test_data.length; i++) {
+			for(var i=0; i < test_data.length; i++) {
+				var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
+				//Get the object store
+				var obj_store = trans.objectStore("enterprise_nx01");				
 				var data = test_data[i];
-				var request = obj_store.add(data);
+				var request = obj_store.put(data);
 				request.onsuccess = function(event) {
-					log("Record save for enterprise_nx01 - Name: " +data.name +" Age: " +data.age +" Location: " +data.location);
+					log("Record save for enterprise_nx01");
 				};
 				request.onerror = function(e) {
 					error(e);
 				};
 			}
+		}
+		
+		//Read All Objects
+		function readObjects() {
+			var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
+			//Get the object store
+			var obj_store = trans.objectStore("enterprise_nx01");
+			// Get everything in the store;
+			var keyRange = IDBKeyRange.lowerBound(0);
+			var cursorRequest = obj_store.openCursor(keyRange);	
+			cursorRequest.onsuccess = function(e) {
+			    var result = e.target.result;
+			    if(!!result == false)
+					return;
+				var obj = result.value;
+				log("Id: " +obj.id +", Name: " +obj.name +", Age: " +obj.age, +", Location: " +obj.location);
+			    result.continue();
+			};
+			cursorRequest.onerror = function(e) {
+				error(e);
+			};
 		}
 	</script>
 	<body onload="init()">
