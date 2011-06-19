@@ -7,8 +7,8 @@
 		var idx_database = {}
 		
 		var test_data = [
-			{name: "John Archer", age: 35, location: "Broken Bow"},
-			{name: "Hoshi", age: 32, location: "Tokyo"}
+			{id: 1, name: "John Archer", age: 35, location: "Broken Bow"},
+			{id: 2, name: "Hoshi", age: 32, location: "Tokyo"}
 		];
 		
 		function log(msg) {
@@ -43,6 +43,7 @@
 			    delete idx_database.db;
 			  }
 			  createObjectStore();
+			 loadObjects();
 			};
 			request.onerror = function(e) {
 			  error(e);
@@ -51,26 +52,57 @@
 		
 		//Created a object store in the database (Eq to creating a table)
 		function createObjectStore() {
-			//Name of the store, keypath, auto increment keys
-			request = idx_database.createObjectStore("enterprise_nx01", "id", true);
-			request.onsuccess = function() {
-				log("enterprise_nx01 created");
-				loadObjects();
-			};
-			request.onerror = function(e) {
-			  error(e);
-			};
+			var ver = "1.0";
+			if(ver != idx_database.version) {
+				var set_version_request = idx_database.setVersion(ver);
+				set_version_request.onerror = function(e) {
+					error(e);
+				};
+				set_version_request.onsuccess = function(e) {
+					idx_database.createObjectStore("enterprise_nx01", { keyPath: "id", autoincrement: true } );
+					log("Object Store enterprise_nx01 created");
+				}
+			} else {
+				cleanup();
+			}
+ 		}
+		
+		
+		//Cleanup database before load
+		function cleanup() {
+			var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
+			//Get the object store
+			var obj_store = trans.objectStore("enterprise_nx01");
+			var request = obj_store.delete(1);
+			request.onsuccess = onCleanUpSuccess;
+			request.onerror = onCleanUpError;
+			var request1 = obj_store.delete(2);
+			request1.onsuccess = onCleanUpSuccess;
+			request1.onerror = onCleanUpError;
+		}
+		
+		function onCleanUpSuccess() {
+			//Do nothing for now
+		}
+		
+		function onCleanUpError(e) {
+			error(e);
 		}
 		
 		//Load some test objects into the database
 		function loadObjects() {
+			var trans = idx_database.transaction(["enterprise_nx01"], IDBTransaction.READ_WRITE, 0);
 			//Get the object store
-			var obj_store = idx_database.objectStore("enterprise_nx01");
+			var obj_store = trans.objectStore("enterprise_nx01");
 			//Iterate through test data and store the objects in the store
 			for(var i=0; i< test_data.length; i++) {
 				var data = test_data[i];
-				obj_store.add(data).onsuccess = function(event) {
-					log("Record save for enterprise_nx01 - Name: " +data.name +" Age: " +data.age +" Location: " +data.location +" Assigned Id: " +event.result);
+				var request = obj_store.add(data);
+				request.onsuccess = function(event) {
+					log("Record save for enterprise_nx01 - Name: " +data.name +" Age: " +data.age +" Location: " +data.location);
+				};
+				request.onerror = function(e) {
+					error(e);
 				};
 			}
 		}
