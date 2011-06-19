@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html>
+	<title>IndexedDB Test</title>
+	<script>
+		
+		
+		var idx_database = {}
+		
+		var test_data = [
+			{name: "John Archer", age: 35, location: "Broken Bow"},
+			{name: "Hoshi", age: 32, location: "Tokyo"}
+		];
+		
+		function log(msg) {
+			document.write(msg +"<br>");
+		}
+		
+		function error(msg) {
+			document.write("<font color=red>" +msg +"</font><br>");
+		}
+		
+		function init() {
+			window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB;
+			window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange;
+			window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction;
+			if(window.indexedDB) {
+				log("IndexDB Implementation detected");
+			} else {
+				error("IndexDB Implementation not detected");
+				return;
+			}
+			startup();
+		}
+		
+		function startup() {
+			var request = window.indexedDB.open("SimpleTestDatabase", "This is a simple database to test IndexedDB");
+			request.onsuccess = function(event) {
+			  idx_database = request.result;
+			  log("Database Opened");
+			  idx_database.onversionchange = function() {
+			    log("Version change request, so closing the database");
+			    idx_database.db.close();
+			    delete idx_database.db;
+			  }
+			  createObjectStore();
+			};
+			request.onerror = function(e) {
+			  error(e);
+			};
+		}
+		
+		//Created a object store in the database (Eq to creating a table)
+		function createObjectStore() {
+			//Name of the store, keypath, auto increment keys
+			request = idx_database.createObjectStore("enterprise_nx01", "id", true);
+			request.onsuccess = function() {
+				log("enterprise_nx01 created");
+				loadObjects();
+			};
+			request.onerror = function(e) {
+			  error(e);
+			};
+		}
+		
+		//Load some test objects into the database
+		function loadObjects() {
+			//Get the object store
+			var obj_store = idx_database.objectStore("enterprise_nx01");
+			//Iterate through test data and store the objects in the store
+			for(var i=0; i< test_data.length; i++) {
+				var data = test_data[i];
+				obj_store.add(data).onsuccess = function(event) {
+					log("Record save for enterprise_nx01 - Name: " +data.name +" Age: " +data.age +" Location: " +data.location +" Assigned Id: " +event.result);
+				};
+			}
+		}
+	</script>
+	<body onload="init()">
+		<p>IndexDB Test</p>
+	</body>
+</html>

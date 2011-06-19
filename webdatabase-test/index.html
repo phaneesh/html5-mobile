@@ -1,0 +1,18 @@
+﻿<!doctype html>
+<html manifest="offline.manifest">
+   <head>
+   	  <meta name="viewport" content="width=480; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+      <title>HTML5 Offline Sample</title>
+      <script type="text/javascript" src="html5sample.js" ></script>
+   </head>
+     <body onload="onPageLoad()">
+      <h3>Overview.</h3>
+      <div id="records"></div>
+	  <h3>Details</h3>
+      <form name="itemForm">
+		<input type="button" name="ramdom" value="Insert 100 Records" onclick="onInsertMultiple()" />
+      </form>
+	  <h4>Status</h4>
+      <div id="status"></div>
+   </body>
+</html>
